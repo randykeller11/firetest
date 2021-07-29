@@ -1,20 +1,21 @@
 const functions = require("firebase-functions");
-import * as admin from "firebase-admin";
+const admin = require("firebase-admin");
 admin.initializeApp();
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.getWatchlist = functions.https.onRequest((request, response) => {
-  const promise = admin
-    .firestore()
-    .doc("watchlists/uEoXccZNxVTYdBNNK4ilSUO2rSr1")
-    .get();
-  const p2 = promise.then((snapshot) => {
-    const data = snapshot.data();
-    response.send();
+
+exports.logActivities = functions.firestore
+  .document("/{collection}/{id}")
+  .onCreate((snap, context) => {
+    console.log(snap.data());
+
+    const activities = admin.firestore().collection("activities");
+    const collection = context.params.collection;
+
+    if (collection === "watchlists") {
+      return activities.add({ text: "a new user was added" });
+    }
+    if (collection === "posts") {
+      return activities.add({ text: "someone just made a post" });
+    }
+
+    return null;
   });
-  p2.catch((error) => {
-    console.log(error);
-    response.status(500).send(error);
-  });
-});
