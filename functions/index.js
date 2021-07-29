@@ -3,19 +3,21 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.logActivities = functions.firestore
-  .document("/{collection}/{id}")
-  .onCreate((snap, context) => {
-    console.log(snap.data());
+    .document("/{collection}/{id}")
+    .onCreate((snap, context) => {
+      console.log(snap.data());
 
-    const activities = admin.firestore().collection("activities");
-    const collection = context.params.collection;
+      const activities = admin.firestore().collection("activities");
 
-    if (collection === "watchlists") {
-      return activities.add({ text: "a new user was added" });
-    }
-    if (collection === "posts") {
-      return activities.add({ text: "someone just made a post" });
-    }
+      const stores = admin.firestore().collection("stores");
+      const collection = context.params.collection;
 
-    return null;
-  });
+      if (collection === "pendingUpdates") {
+        return stores.add({text: "new pending update!"});
+      }
+      if (collection === "posts") {
+        return activities.add({text: "someone just made a post"});
+      }
+
+      return null;
+    });
