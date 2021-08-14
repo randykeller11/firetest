@@ -29,8 +29,8 @@ exports.inventoryUpdate = functions.firestore
           { merge: true }
         );
 
-      const citiesRef = admin.firestore().collection("albumPages");
-      const snapshot = await citiesRef
+      const albumPageRef = admin.firestore().collection("albumPages");
+      const snapshot = await albumPageRef
         .where(
           "albumInfo.idAlbum",
           "==",
@@ -60,15 +60,25 @@ exports.inventoryUpdate = functions.firestore
           .set({ albumPage: crcInventoryID }, { merge: true });
         return;
       }
-      //update album page document to reflect new price
-      console.log("🍩🏆🌊");
+      // update album page document to reflect new price
+      snapshot.forEach((_albumPageDoc) => {
+        console.log(_albumPageDoc.data());
+
+        //make this work with different gradings
+
+        //check low price
+
+        //check high price
+
+        //calculate new median and set that value
+      });
     }
   });
 
-//onUpdate function for "pendingInventoryUpdates/{id}"
-//create copy of PIU object in "crcMusicInventory"
-//add albumPage value to "musicInventories/{id}"
-//delete "PIU" document
+// onUpdate function for "pendingInventoryUpdates/{id}"
+// create copy of PIU object in "crcMusicInventory"
+// add albumPage value to "musicInventories/{id}"
+// delete "PIU" document
 
 exports.newUserSignUp = functions.auth.user().onCreate((user) => {
   console.log("user created", user.email, user.uid);
