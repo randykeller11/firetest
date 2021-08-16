@@ -66,13 +66,16 @@ exports.inventoryUpdate = functions.firestore
         return;
       }
       // update album page document to reflect new price
+      // update album page document to reflect new price
       snapshot.forEach((_albumPageDoc) => {
         const invItemData = _albumPageDoc.data();
+        const _priceInfo =
+          invItemData.priceInfo[`${inventoryUpdateDoc.value.condition}`];
+        let updateTarget = `priceInfo.${inventoryUpdateDoc.value.condition}`;
 
-        console.log(
-          "the current price Info for that condition is: ",
-          invItemData.priceInfo[`${inventoryUpdateDoc.value.condition}`]
-        );
+        if (_priceInfo.lowestPrice > inventoryUpdateDoc.value.priceTarget) {
+          console.log("we need to update the price info! 🏆");
+        }
 
         // make this work with different gradings
 
@@ -84,7 +87,6 @@ exports.inventoryUpdate = functions.firestore
       });
     }
   });
-
 // onUpdate function for "pendingInventoryUpdates/{id}"
 // create copy of PIU object in "crcMusicInventory"
 // add albumPage value to "musicInventories/{id}"
