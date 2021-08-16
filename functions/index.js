@@ -1,119 +1,125 @@
-const { v4: uuidv4 } = require("uuid");
+const {v4: uuidv4} = require("uuid");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
 exports.asyncTest = functions.firestore
-  .document("pendingUpdates/{id}")
-  .onCreate(async (snap, context) => {
-    const doc = await admin
-      .firestore()
-      .collection("musicInventories")
-      .doc(`${context.params.id}`)
-      .get();
+    .document("pendingUpdates/{id}")
+    .onCreate(async (snap, context) => {
+      const doc = await admin
+          .firestore()
+          .collection("musicInventories")
+          .doc(`${context.params.id}`)
+          .get();
 
-    console.log(doc.data());
-  });
+      console.log(doc.data());
+    });
 
 exports.inventoryUpdate = functions.firestore
-  .document("pendingInventoryUpdates/{id}")
-  .onCreate(async (snap, context) => {
-    const inventoryUpdateDoc = snap.data();
-    if (inventoryUpdateDoc.type === "add") {
-      await admin
-        .firestore()
-        .collection("musicInventories")
-        .doc(`${inventoryUpdateDoc.seller}`)
-        .set(
-          { [inventoryUpdateDoc.inventoryID]: inventoryUpdateDoc.value },
-          { merge: true }
-        );
-
-      const albumPageRef = admin.firestore().collection("albumPages");
-      const snapshot = await albumPageRef
-        .where(
-          "albumInfo.idAlbum",
-          "==",
-          inventoryUpdateDoc.value.albumData.idAlbum
-        )
-        .get();
-      if (snapshot.empty) {
-        const crcInventoryID = uuidv4();
+    .document("pendingInventoryUpdates/{id}")
+    .onCreate(async (snap, context) => {
+      const inventoryUpdateDoc = snap.data();
+      const IUDInfo = inventoryUpdateDoc.value;
+      if (inventoryUpdateDoc.type === "add") {
         await admin
-          .firestore()
-          .collection("albumPages")
-          .doc(`${crcInventoryID}`)
-          .set({
-            albumInfo: inventoryUpdateDoc.value.albumData,
-            formatTags: inventoryUpdateDoc.value.formatTags,
-            priceInfo: {
-              [`${inventoryUpdateDoc.value.condition}`]: {
-                lowestPrice: inventoryUpdateDoc.value.priceTarget,
-                medianPrice: inventoryUpdateDoc.value.priceTarget,
-                highestPrice: inventoryUpdateDoc.value.priceTarget,
-                totalCopies: 1,
-              },
-            },
+            .firestore()
+            .collection("musicInventories")
+            .doc(`${inventoryUpdateDoc.seller}`)
+            .set({[inventoryUpdateDoc.inventoryID]: IUDInfo}, {merge: true});
 
-            inAudioDB: true,
-          });
-
-        await admin
-          .firestore()
-          .collection("pendingInventoryUpdates")
-          .doc(`${context.params.id}`)
-          .set({ albumPage: crcInventoryID }, { merge: true });
-        return;
-      }
-      // update album page document to reflect new price
-      // update album page document to reflect new price
-      snapshot.forEach((_albumPageDoc) => {
-        const invItemData = _albumPageDoc.data();
-        const updateTarget = `${inventoryUpdateDoc.value.condition}`;
-        const hasPriceInfo = Object.prototype.hasOwnProperty.call(
-          invItemData.priceInfo,
-          updateTarget
-        );
-
-        if (!hasPriceInfo) {
-          console.log("no price info for this condition 🍩");
-        }
-
-        if (hasPriceInfo) {
-          const _priceInfo = invItemData.priceInfo[updateTarget];
-
-          if (_priceInfo.lowestPrice > inventoryUpdateDoc.value.priceTarget) {
-            admin
+        const albumPageRef = admin.firestore().collection("albumPages");
+        const snapshot = await albumPageRef
+            .where("albumInfo.idAlbum", "==", IUDInfo.albumData.idAlbum)
+            .get();
+        if (snapshot.empty) {
+          const crcInventoryID = uuidv4();
+          await admin
               .firestore()
               .collection("albumPages")
-              .doc(`${_albumPageDoc.id}`)
-              .set(
-                {
-                  priceInfo: {
-                    // note the square brackets
-                    [updateTarget]: {
-                      lowestPrice: inventoryUpdateDoc.value.priceTarget,
-                    },
+              .doc(`${crcInventoryID}`)
+              .set({
+                albumInfo: IUDInfo.albumData,
+                formatTags: IUDInfo.formatTags,
+                priceInfo: {
+                  [`${IUDInfo.condition}`]: {
+                    lowestPrice: IUDInfo.priceTarget,
+                    medianPrice: IUDInfo.priceTarget,
+                    highestPrice: IUDInfo.priceTarget,
+                    totalCopies: 1,
                   },
                 },
-                {
-                  merge: true,
-                }
-              );
+
+                inAudioDB: true,
+              });
+
+          await admin
+              .firestore()
+              .collection("pendingInventoryUpdates")
+              .doc(`${context.params.id}`)
+              .set({albumPage: crcInventoryID}, {merge: true});
+          return;
+        }
+        // update album page document to reflect new price
+        // update album page document to reflect new price
+        snapshot.forEach((_albumPageDoc) => {
+          const invItemData = _albumPageDoc.data();
+          const updateTarget = `${IUDInfo.condition}`;
+          const hasPriceInfo = Object.prototype.hasOwnProperty.call(
+              invItemData.priceInfo,
+              updateTarget,
+          );
+
+          if (!hasPriceInfo) {
+            console.log("no price info for this condition 🍩");
+          }
+
+          if (hasPriceInfo) {
+            const _priceInfo = invItemData.priceInfo[updateTarget];
+            const updateObject = {..._priceInfo};
+
+            if (_priceInfo.lowestPrice > IUDInfo.priceTarget) {
+              updateObject.lowestPrice = IUDInfo.priceTarget;
+            }
+
+            if (_priceInfo.highestPrice < IUDInfo.priceTarget) {
+              updateObject.highestPrice = IUDInfo.priceTarget;
+            }
+
+            const newTotal = _priceInfo.totalCopies + 1;
+            const divideForAverage =
+            newTotal * (_priceInfo.medianPrice + IUDInfo.priceTarget);
+
+            updateObject.medianPrice = divideForAverage / newTotal;
+            updateObject.totalCopies = newTotal;
+
+            admin
+                .firestore()
+                .collection("albumPages")
+                .doc(`${_albumPageDoc.id}`)
+                .set(
+                    {
+                      priceInfo: {
+                        // note the square brackets
+                        [updateTarget]: updateObject,
+                      },
+                    },
+                    {
+                      merge: true,
+                    },
+                );
             return;
           }
-        }
 
-        // make this work with different gradings
+          // make this work with different gradings
 
-        // check low price
+          // check low price
 
-        // check high price
+          // check high price
 
         // calculate new median and set that value
-      });
-    }
-  });
+        });
+      }
+    });
 // onUpdate function for "pendingInventoryUpdates/{id}"
 // create copy of PIU object in "crcMusicInventory"
 // add albumPage value to "musicInventories/{id}"
@@ -122,21 +128,21 @@ exports.inventoryUpdate = functions.firestore
 exports.newUserSignUp = functions.auth.user().onCreate((user) => {
   console.log("user created", user.email, user.uid);
   return admin
-    .firestore()
-    .collection("users")
-    .doc(`${user.uid}`)
-    .set({ profileID: uuidv4() });
+      .firestore()
+      .collection("users")
+      .doc(`${user.uid}`)
+      .set({profileID: uuidv4()});
 });
 
 exports.newStoreSignUp = functions.firestore
-  .document("users/{id}")
-  .onUpdate((snap, context) => {
-    const after = snap.after.data();
-    if (after.accountType === 1) {
-      return admin
-        .firestore()
-        .collection("musicInventories")
-        .doc(`${context.params.id}`)
-        .set({});
-    }
-  });
+    .document("users/{id}")
+    .onUpdate((snap, context) => {
+      const after = snap.after.data();
+      if (after.accountType === 1) {
+        return admin
+            .firestore()
+            .collection("musicInventories")
+            .doc(`${context.params.id}`)
+            .set({});
+      }
+    });
