@@ -46,12 +46,12 @@ exports.inventoryUpdate = functions.firestore
           .set({
             albumInfo: inventoryUpdateDoc.value.albumData,
             formatTags: inventoryUpdateDoc.value.formatTags,
-            totalCopies: 1,
             priceInfo: {
               [`${inventoryUpdateDoc.value.condition}`]: {
                 lowestPrice: inventoryUpdateDoc.value.priceTarget,
                 medianPrice: inventoryUpdateDoc.value.priceTarget,
                 highestPrice: inventoryUpdateDoc.value.priceTarget,
+                totalCopies: 1,
               },
             },
 
@@ -69,12 +69,39 @@ exports.inventoryUpdate = functions.firestore
       // update album page document to reflect new price
       snapshot.forEach((_albumPageDoc) => {
         const invItemData = _albumPageDoc.data();
-        const _priceInfo =
-          invItemData.priceInfo[`${inventoryUpdateDoc.value.condition}`];
-        let updateTarget = `priceInfo.${inventoryUpdateDoc.value.condition}`;
+        const updateTarget = `${inventoryUpdateDoc.value.condition}`;
+        const hasPriceInfo = Object.prototype.hasOwnProperty.call(
+          invItemData.priceInfo,
+          updateTarget
+        );
 
-        if (_priceInfo.lowestPrice > inventoryUpdateDoc.value.priceTarget) {
-          console.log("we need to update the price info! 🏆");
+        if (!hasPriceInfo) {
+          console.log("no price info for this condition 🍩");
+        }
+
+        if (hasPriceInfo) {
+          const _priceInfo = invItemData.priceInfo[updateTarget];
+
+          if (_priceInfo.lowestPrice > inventoryUpdateDoc.value.priceTarget) {
+            admin
+              .firestore()
+              .collection("albumPages")
+              .doc(`${_albumPageDoc.id}`)
+              .set(
+                {
+                  priceInfo: {
+                    // note the square brackets
+                    [updateTarget]: {
+                      lowestPrice: inventoryUpdateDoc.value.priceTarget,
+                    },
+                  },
+                },
+                {
+                  merge: true,
+                }
+              );
+            return;
+          }
         }
 
         // make this work with different gradings
