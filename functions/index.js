@@ -84,12 +84,19 @@ exports.inventoryUpdate = functions.firestore
             if (_priceInfo.highestPrice < IUDInfo.priceTarget) {
               updateObject.highestPrice = IUDInfo.priceTarget;
             }
+            const calcMedian = (_priceTarget, _currMedian, _currTotal) => {
+              const _newTotal = _currTotal + 1;
+              const _newMedian =
+              (_currTotal * _currMedian + _priceTarget) / _newTotal;
+              return [_newTotal, _newMedian];
+            };
+            const [newTotal, newMedian] = calcMedian(
+                Number(IUDInfo.priceTarget),
+                Number(_priceInfo.medianPrice),
+                Number(_priceInfo.totalCopies),
+            );
 
-            const newTotal = _priceInfo.totalCopies + 1;
-            const divideForAverage =
-            newTotal * (_priceInfo.medianPrice + IUDInfo.priceTarget);
-
-            updateObject.medianPrice = divideForAverage / newTotal;
+            updateObject.medianPrice = newMedian;
             updateObject.totalCopies = newTotal;
 
             admin
