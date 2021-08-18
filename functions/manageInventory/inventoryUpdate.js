@@ -83,13 +83,8 @@ exports.handler = async (snap, context, db) => {
         if (_priceInfo.highestPrice < IUDInfo.priceTarget) {
           updateObject.highestPrice = IUDInfo.priceTarget;
         }
-        const calcMedian = (_priceTarget, _currMedian, _currTotal) => {
-          const _newTotal = _currTotal + 1;
-          const _newMedian =
-            (_currTotal * _currMedian + _priceTarget) / _newTotal;
-          return [_newTotal, _newMedian];
-        };
-        const [newTotal, newMedian] = calcMedian(
+
+        const [newTotal, newMedian] = helpers.calcMedian(
             Number(IUDInfo.priceTarget),
             Number(_priceInfo.medianPrice),
             Number(_priceInfo.totalCopies),
