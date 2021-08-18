@@ -4,19 +4,23 @@ const helpers = require("./helperFunctions");
 exports.handler = async (db, inventoryUpdateDoc, context) => {
   const IUDInfo = inventoryUpdateDoc.value;
 
+  // add album to users music inventory
   await db
       .collection("musicInventories")
       .doc(`${inventoryUpdateDoc.seller}`)
       .set({[inventoryUpdateDoc.inventoryID]: IUDInfo}, {merge: true});
 
+  // check album pages collection for a page with audioDB-ID
   const albumPageRef = db.collection("albumPages");
   const snapshot = await albumPageRef
       .where("albumInfo.idAlbum", "==", IUDInfo.albumData.idAlbum)
       .get();
+
+  // declare important variables for function below
   const crcInventoryID = uuidv4();
   const dataForCleanup = {...inventoryUpdateDoc, albumPage: crcInventoryID};
 
-
+  // if there is not an album page
   if (snapshot.empty) {
     await db
         .collection("albumPages")
@@ -38,7 +42,7 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
     helpers.cleanUp(db, dataForCleanup, `${context.params.id}`);
     return;
   }
-  // update album page document to reflect new price
+  // if there is an album page
   // update album page document to reflect new price
   snapshot.forEach((_albumPageDoc) => {
     const invItemData = _albumPageDoc.data();
@@ -47,7 +51,7 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
         invItemData.priceInfo,
         updateTarget,
     );
-
+    // if no price info exists for this condition add new info with total of 1
     if (!hasPriceInfo) {
       db
           .collection("albumPages")
@@ -70,7 +74,8 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
       helpers.cleanUp(db, dataForCleanup, `${context.params.id}`);
       return;
     }
-
+    // if there is price info for the condition
+    // update the lowestPrice, highestPrice and medianPrice
     if (hasPriceInfo) {
       const _priceInfo = invItemData.priceInfo[updateTarget];
       const updateObject = {..._priceInfo};
