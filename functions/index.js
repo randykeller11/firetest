@@ -1,4 +1,4 @@
-const inventoryUpdate = require('./manageInventory/inventoryUpdate');
+const inventoryUpdate = require("./manageInventory/inventoryUpdate");
 const {v4: uuidv4} = require("uuid");
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -19,8 +19,8 @@ exports.asyncTest = functions.firestore
 
 exports.inventoryUpdate = functions.firestore
     .document("pendingInventoryUpdates/{id}")
-    .onCreate((_snap,_context)=>{
-      inventoryUpdate.handler(_snap, _context, db)
+    .onCreate((_snap, _context)=>{
+      inventoryUpdate.handler(_snap, _context, db);
     });
 // onUpdate function for "pendingInventoryUpdates/{id}"
 // create copy of PIU object in "crcMusicInventory"

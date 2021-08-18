@@ -1,4 +1,5 @@
 const {v4: uuidv4} = require("uuid");
+const helpers = require("./helperFunctions");
 
 exports.handler = async (snap, context, db) => {
   const inventoryUpdateDoc = snap.data();
@@ -14,19 +15,8 @@ exports.handler = async (snap, context, db) => {
         .where("albumInfo.idAlbum", "==", IUDInfo.albumData.idAlbum)
         .get();
     const crcInventoryID = uuidv4();
+    const dataForCleanup = {...inventoryUpdateDoc, albumPage: crcInventoryID};
 
-    const cleanUp = async () => {
-      const dataToCopy = {...inventoryUpdateDoc, albumPage: crcInventoryID};
-      delete dataToCopy.type;
-      await db
-          .collection("CRCMusicInventory")
-          .add(dataToCopy);
-      await db
-          .collection("pendingInventoryUpdates")
-          .doc(`${context.params.id}`)
-          .delete();
-      return;
-    };
 
     if (snapshot.empty) {
       await db
@@ -46,7 +36,7 @@ exports.handler = async (snap, context, db) => {
 
             inAudioDB: true,
           });
-      cleanUp();
+      helpers.cleanUp(db, dataForCleanup, `${context.params.id}`);
       return;
     }
     // update album page document to reflect new price
@@ -78,7 +68,7 @@ exports.handler = async (snap, context, db) => {
                   merge: true,
                 },
             );
-        cleanUp();
+        helpers.cleanUp(db, dataForCleanup, `${context.params.id}`);
         return;
       }
 
@@ -122,7 +112,7 @@ exports.handler = async (snap, context, db) => {
                   merge: true,
                 },
             );
-        cleanUp();
+        helpers.cleanUp(db, dataForCleanup, `${context.params.id}`);
       }
     });
   }
