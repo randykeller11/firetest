@@ -70,7 +70,26 @@ exports.inventoryUpdate = functions.firestore
           );
 
           if (!hasPriceInfo) {
-            console.log("no price info for this condition 🍩");
+            admin
+                .firestore()
+                .collection("albumPages")
+                .doc(`${_albumPageDoc.id}`)
+                .set(
+                    {
+                      priceInfo: {
+                        [`${IUDInfo.condition}`]: {
+                          lowestPrice: IUDInfo.priceTarget,
+                          medianPrice: IUDInfo.priceTarget,
+                          highestPrice: IUDInfo.priceTarget,
+                          totalCopies: 1,
+                        },
+                      },
+                    },
+                    {
+                      merge: true,
+                    },
+                );
+            return;
           }
 
           if (hasPriceInfo) {
@@ -114,16 +133,8 @@ exports.inventoryUpdate = functions.firestore
                       merge: true,
                     },
                 );
-            return;
+            console.log("we got to this point 🍩🏆🌊🔑");
           }
-
-          // make this work with different gradings
-
-          // check low price
-
-          // check high price
-
-        // calculate new median and set that value
         });
       }
     });
