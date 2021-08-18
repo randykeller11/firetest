@@ -31,8 +31,23 @@ exports.inventoryUpdate = functions.firestore
         const snapshot = await albumPageRef
             .where("albumInfo.idAlbum", "==", IUDInfo.albumData.idAlbum)
             .get();
+        const crcInventoryID = uuidv4();
+
+        const cleanUp = async () => {
+          const dataToCopy = {...inventoryUpdateDoc, albumPage: crcInventoryID};
+          delete dataToCopy.type;
+          await admin.firestore()
+              .collection("CRCMusicInventory")
+              .add(dataToCopy);
+          await admin
+              .firestore()
+              .collection("pendingInventoryUpdates")
+              .doc(`${context.params.id}`)
+              .delete();
+          return;
+        };
+
         if (snapshot.empty) {
-          const crcInventoryID = uuidv4();
           await admin
               .firestore()
               .collection("albumPages")
@@ -51,12 +66,7 @@ exports.inventoryUpdate = functions.firestore
 
                 inAudioDB: true,
               });
-
-          await admin
-              .firestore()
-              .collection("pendingInventoryUpdates")
-              .doc(`${context.params.id}`)
-              .set({albumPage: crcInventoryID}, {merge: true});
+          cleanUp();
           return;
         }
         // update album page document to reflect new price
@@ -89,6 +99,7 @@ exports.inventoryUpdate = functions.firestore
                       merge: true,
                     },
                 );
+            cleanUp();
             return;
           }
 
@@ -133,7 +144,7 @@ exports.inventoryUpdate = functions.firestore
                       merge: true,
                     },
                 );
-            console.log("we got to this point 🍩🏆🌊🔑");
+            cleanUp();
           }
         });
       }
