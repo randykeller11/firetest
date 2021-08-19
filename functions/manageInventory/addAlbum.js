@@ -26,6 +26,8 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
         .collection("albumPages")
         .doc(`${crcInventoryID}`)
         .set({
+          albumTitle: IUDInfo.albumData.strAlbum.toLowerCase(),
+          artist: IUDInfo.albumData.strArtist.toLowerCase(),
           albumInfo: IUDInfo.albumData,
           formatTags: IUDInfo.formatTags,
           priceInfo: {
@@ -53,8 +55,7 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
     );
     // if no price info exists for this condition add new info with total of 1
     if (!hasPriceInfo) {
-      db
-          .collection("albumPages")
+      db.collection("albumPages")
           .doc(`${_albumPageDoc.id}`)
           .set(
               {
@@ -97,13 +98,12 @@ exports.handler = async (db, inventoryUpdateDoc, context) => {
       updateObject.medianPrice = newMedian;
       updateObject.totalCopies = newTotal;
 
-      db
-          .collection("albumPages")
+      db.collection("albumPages")
           .doc(`${_albumPageDoc.id}`)
           .set(
               {
                 priceInfo: {
-                // note the square brackets
+                  // note the square brackets
                   [updateTarget]: updateObject,
                 },
               },
