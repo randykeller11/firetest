@@ -12,6 +12,8 @@ exports.handler = async (snap, context, db) => {
         );
     if (inventoryUpdateDoc.value.infoSource === "albumPages") {
       addAlbum.updateAlbumPage(db, inventoryUpdateDoc, context);
+    } else {
+      addAlbum.makeAlbumPage(db, inventoryUpdateDoc, context);
     }
   }
 };

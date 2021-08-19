@@ -1,4 +1,5 @@
 const helpers = require("./helperFunctions");
+const {v4: uuidv4} = require("uuid");
 
 exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
   const IUDInfo = inventoryUpdateDoc.value;
@@ -11,7 +12,6 @@ exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
       invItemData.priceInfo,
       updateTarget,
   );
-  // console.log(hasPriceInfo);
   // if no price info exists for this condition add new info with total of 1
   if (!hasPriceInfo) {
     db.collection("albumPages")
@@ -80,4 +80,34 @@ exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
         `${context.params.id}`,
     );
   }
+};
+
+exports.makeAlbumPage = async (db, inventoryUpdateDoc, context) => {
+  const crcInventoryID = uuidv4();
+  const IUDInfo = inventoryUpdateDoc.value;
+  await db
+      .collection("albumPages")
+      .doc(`${crcInventoryID}`)
+      .set({
+        albumTitle: IUDInfo.albumData.strAlbum.toLowerCase(),
+        artist: IUDInfo.albumData.strArtist.toLowerCase(),
+        albumInfo: IUDInfo.albumData,
+        formatTags: IUDInfo.formatTags,
+        priceInfo: {
+          [`${IUDInfo.condition}`]: {
+            lowestPrice: IUDInfo.priceTarget,
+            medianPrice: IUDInfo.priceTarget,
+            highestPrice: IUDInfo.priceTarget,
+            totalCopies: 1,
+          },
+        },
+
+        inAudioDB: true,
+      });
+  helpers.cleanUp(
+      db,
+      {...inventoryUpdateDoc, albumPage: crcInventoryID},
+      `${context.params.id}`,
+  );
+  return;
 };
