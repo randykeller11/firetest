@@ -1,7 +1,12 @@
 const helpers = require("./helperFunctions");
 const {v4: uuidv4} = require("uuid");
 
-exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
+exports.updateAlbumPage = async (
+    db,
+    inventoryUpdateDoc,
+    context,
+    inventoryObject,
+) => {
   try {
     const IUDInfo = inventoryUpdateDoc.value;
     const docID = IUDInfo.albumData.docID;
@@ -42,7 +47,7 @@ exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
           );
       helpers.cleanUp(
           db,
-          {...inventoryUpdateDoc, albumPage: docID},
+          {...inventoryObject, albumPage: docID},
           `${context.params.id}`,
       );
       return;
@@ -85,7 +90,7 @@ exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
           );
       helpers.cleanUp(
           db,
-          {...inventoryUpdateDoc, albumPage: docID},
+          {...inventoryObject, albumPage: docID},
           `${context.params.id}`,
       );
     }
@@ -94,7 +99,12 @@ exports.updateAlbumPage = async (db, inventoryUpdateDoc, context) => {
   }
 };
 
-exports.makeAlbumPage = async (db, inventoryUpdateDoc, context) => {
+exports.makeAlbumPage = async (
+    db,
+    inventoryUpdateDoc,
+    context,
+    inventoryObject,
+) => {
   try {
     const crcInventoryID = uuidv4();
     const IUDInfo = inventoryUpdateDoc.value;
@@ -106,9 +116,9 @@ exports.makeAlbumPage = async (db, inventoryUpdateDoc, context) => {
         .collection("albumPages")
         .doc(`${crcInventoryID}`)
         .set({
-          albumTitle: IUDInfo.albumData.title.toLowerCase(),
-          artist: IUDInfo.albumData.artists_sort.toLowerCase(),
-          albumInfo: IUDInfo.albumData,
+          albumTitle_Search: IUDInfo.albumData.title.toLowerCase(),
+          artist_Search: IUDInfo.albumData.artists_sort.toLowerCase(),
+          dispEssentials: inventoryObject.dispEssentials,
           priceInfo: {
             [`${conditionGrade}`]: {
               lowestPrice: IUDInfo.priceTarget,
@@ -123,13 +133,13 @@ exports.makeAlbumPage = async (db, inventoryUpdateDoc, context) => {
         .doc(`${inventoryUpdateDoc.seller}`)
         .set({
           [inventoryUpdateDoc.inventoryID]: {
-            ...inventoryUpdateDoc,
+            ...inventoryObject,
             albumPage: crcInventoryID,
           },
         });
     helpers.cleanUp(
         db,
-        {...inventoryUpdateDoc, albumPage: crcInventoryID},
+        {...inventoryObject, albumPage: crcInventoryID},
         `${context.params.id}`,
     );
     return;
