@@ -118,6 +118,15 @@ exports.makeAlbumPage = async (db, inventoryUpdateDoc, context) => {
             },
           },
         });
+    await db
+        .collection("musicInventories")
+        .doc(`${inventoryUpdateDoc.seller}`)
+        .set({
+          [inventoryUpdateDoc.inventoryID]: {
+            ...inventoryUpdateDoc,
+            albumPage: crcInventoryID,
+          },
+        });
     helpers.cleanUp(
         db,
         {...inventoryUpdateDoc, albumPage: crcInventoryID},
