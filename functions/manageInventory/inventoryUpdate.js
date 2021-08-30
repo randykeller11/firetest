@@ -1,4 +1,5 @@
 const addAlbum = require("./addAlbum");
+const {v4: uuidv4} = require("uuid");
 
 exports.handler = async (snap, context, db) => {
   const inventoryUpdateDoc = snap.data();
@@ -6,7 +7,7 @@ exports.handler = async (snap, context, db) => {
   const dispEssentials = {
     albumTitle: IUDInfo.albumData.title,
     artist: IUDInfo.albumData.artists_sort,
-    image: IUDInfo.albumData.thumb,
+    image: IUDInfo.masterImage,
     year: IUDInfo.albumData.year,
     labels: IUDInfo.albumData.labels,
     format: IUDInfo.albumData.formats,
@@ -54,7 +55,29 @@ exports.handler = async (snap, context, db) => {
               },
               {merge: true},
           );
-      addAlbum.makeAlbumPage(db, inventoryUpdateDoc, context, inventoryObject);
+      const crcInventoryID = uuidv4();
+
+      const conditionGrade =
+        IUDInfo.sleeveCondition < IUDInfo.mediaCondition ?
+          IUDInfo.sleeveCondition :
+          IUDInfo.mediaCondition;
+      await db
+          .collection("albumPages")
+          .doc(`${crcInventoryID}`)
+          .set({
+            albumTitle_Search: IUDInfo.albumData.title.toLowerCase(),
+            artist_Search: IUDInfo.albumData.artists_sort.toLowerCase(),
+            dispEssentials: inventoryObject.dispEssentials,
+            priceInfo: {
+              [`${conditionGrade}`]: {
+                lowestPrice: IUDInfo.priceTarget,
+                medianPrice: IUDInfo.priceTarget,
+                highestPrice: IUDInfo.priceTarget,
+                totalCopies: 1,
+              },
+            },
+          });
+      return;
     }
   }
 };

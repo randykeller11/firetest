@@ -137,11 +137,6 @@ exports.makeAlbumPage = async (
             albumPage: crcInventoryID,
           },
         });
-    helpers.cleanUp(
-        db,
-        {...inventoryObject, albumPage: crcInventoryID},
-        `${context.params.id}`,
-    );
     return;
   } catch (error) {
     console.log(error);
