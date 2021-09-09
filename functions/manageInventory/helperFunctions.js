@@ -3,7 +3,6 @@ exports.albumPagePriceUpdate = (_type, _priceTarget, _priceInfo) => {
     const calcMedian = (_pT, _currMedian, _currTotal) => {
       const _newTotal = _currTotal + 1;
       const _newMedian = (_currTotal * _currMedian + _pT) / _newTotal;
-      console.log(_pT, _currMedian, _currTotal);
       return [_newTotal, _newMedian];
     };
 
@@ -49,5 +48,30 @@ exports.makeInventoryObj = (IUDInfo) => {
   return {
     dispEssentials: dispEssentials,
     priceEssentials: priceEssentials,
+  };
+};
+
+exports.makeAdvAlbumPage = (IUDInfo) => {
+  const albumData = IUDInfo.albumData;
+  const checkValue = (_value) => {
+    const returnValue = _value ? _value : "";
+    return returnValue;
+  };
+  return {
+    notes: checkValue(albumData.notes),
+    images: checkValue(albumData.images),
+    trackList: checkValue(albumData.tracklist),
+    labels: checkValue(albumData.labels),
+    credits: checkValue(albumData.extraartists),
+    priceData: [
+      {
+        mediaCondition: IUDInfo.mediaCondition,
+        sleeveCondition: IUDInfo.sleeveCondition,
+        lowestPrice: IUDInfo.priceTarget,
+        medianPrice: IUDInfo.priceTarget,
+        highestPrice: IUDInfo.priceTarget,
+        totalCopies: 1,
+      },
+    ],
   };
 };

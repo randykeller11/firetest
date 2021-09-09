@@ -1,4 +1,3 @@
-const {v4: uuidv4} = require("uuid");
 const helpers = require("./helperFunctions");
 
 exports.makeAlbumPage = async (
@@ -7,9 +6,8 @@ exports.makeAlbumPage = async (
     IUDInfo,
     inventoryObject,
     conditionGrade,
+    crcInventoryID,
 ) => {
-  const crcInventoryID = uuidv4();
-
   await db
       .collection("albumPages")
       .doc(`${crcInventoryID}`)
