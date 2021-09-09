@@ -28,3 +28,26 @@ exports.albumPagePriceUpdate = (_type, _priceTarget, _priceInfo) => {
     return updateObject;
   }
 };
+
+exports.makeInventoryObj = (IUDInfo) => {
+  const dispEssentials = {
+    albumTitle: IUDInfo.albumData.title,
+    artist: IUDInfo.albumData.artists_sort,
+    image: IUDInfo.masterImage,
+    year: IUDInfo.albumData.year,
+    labels: IUDInfo.albumData.labels,
+    format: IUDInfo.albumData.formats,
+    genre: IUDInfo.albumData.genres,
+  };
+
+  const priceEssentials = {
+    priceTarget: IUDInfo.priceTarget,
+    mediaCondition: IUDInfo.mediaCondition,
+    sleeveCondition: IUDInfo.sleeveCondition,
+  };
+
+  return {
+    dispEssentials: dispEssentials,
+    priceEssentials: priceEssentials,
+  };
+};

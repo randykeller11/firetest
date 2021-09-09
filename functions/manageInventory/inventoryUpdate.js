@@ -1,30 +1,16 @@
-const {v4: uuidv4} = require("uuid");
 const helpers = require("./helperFunctions");
+const addAlbum = require("./addAlbum");
 
 exports.handler = async (snap, context, db) => {
   try {
     const inventoryUpdateDoc = snap.data();
     const IUDInfo = inventoryUpdateDoc.value;
-    const dispEssentials = {
-      albumTitle: IUDInfo.albumData.title,
-      artist: IUDInfo.albumData.artists_sort,
-      image: IUDInfo.masterImage,
-      year: IUDInfo.albumData.year,
-      labels: IUDInfo.albumData.labels,
-      format: IUDInfo.albumData.formats,
-      genre: IUDInfo.albumData.genres,
-    };
+    const inventoryObject = helpers.makeInventoryObj(IUDInfo);
 
-    const priceEssentials = {
-      priceTarget: IUDInfo.priceTarget,
-      mediaCondition: IUDInfo.mediaCondition,
-      sleeveCondition: IUDInfo.sleeveCondition,
-    };
-
-    const inventoryObject = {
-      dispEssentials: dispEssentials,
-      priceEssentials: priceEssentials,
-    };
+    const conditionGrade =
+      IUDInfo.sleeveCondition < IUDInfo.mediaCondition ?
+        IUDInfo.sleeveCondition :
+        IUDInfo.mediaCondition;
 
     if (inventoryUpdateDoc.type === "add") {
       await db
@@ -36,12 +22,6 @@ exports.handler = async (snap, context, db) => {
               },
               {merge: true},
           );
-      const crcInventoryID = uuidv4();
-
-      const conditionGrade =
-        IUDInfo.sleeveCondition < IUDInfo.mediaCondition ?
-          IUDInfo.sleeveCondition :
-          IUDInfo.mediaCondition;
 
       const albumPageRef = await db
           .collection("albumPages")
@@ -49,51 +29,20 @@ exports.handler = async (snap, context, db) => {
           .get();
 
       if (albumPageRef.empty) {
-        await db
-            .collection("albumPages")
-            .doc(`${crcInventoryID}`)
-            .set({
-              albumTitle_Search: IUDInfo.albumData.title.toLowerCase(),
-              artist_Search: IUDInfo.albumData.artists_sort.toLowerCase(),
-              releaseID: IUDInfo.albumData.id,
-              dispEssentials: inventoryObject.dispEssentials,
-              priceInfo: {
-                [`${conditionGrade}`]: {
-                  lowestPrice: IUDInfo.priceTarget,
-                  medianPrice: IUDInfo.priceTarget,
-                  highestPrice: IUDInfo.priceTarget,
-                  totalCopies: 1,
-                },
-              },
-            });
-        const updatedInvObject = {
-          ...inventoryObject,
-          albumPage: `${crcInventoryID}`,
-        };
-        await db
-            .collection("musicInventories")
-            .doc(`${inventoryUpdateDoc.seller}`)
-            .set(
-                {
-                  [inventoryUpdateDoc.inventoryID]: updatedInvObject,
-                },
-                {merge: true},
-            );
-        await db.collection("CRCMusicInventory").add(updatedInvObject);
-
+        addAlbum.makeAlbumPage(
+            db,
+            inventoryUpdateDoc,
+            IUDInfo,
+            inventoryObject,
+            conditionGrade,
+        );
         return;
       } else {
         const docID = albumPageRef.docs[0].id;
         const invItemData = albumPageRef.docs[0].data();
-
-        const conditionGrade =
-          IUDInfo.sleeveCondition < IUDInfo.mediaCondition ?
-            IUDInfo.sleeveCondition :
-            IUDInfo.mediaCondition;
-        const updateTarget = `${conditionGrade}`;
         const hasPriceInfo = Object.prototype.hasOwnProperty.call(
             invItemData.priceInfo,
-            updateTarget,
+            `${conditionGrade}`,
         );
 
         // if no price info exists for this condition
@@ -122,7 +71,7 @@ exports.handler = async (snap, context, db) => {
         // if there is price info for the condition
         // update the lowestPrice, highestPrice and medianPrice
         if (hasPriceInfo) {
-          const _priceInfo = invItemData.priceInfo[updateTarget];
+          const _priceInfo = invItemData.priceInfo[`${conditionGrade}`];
           const updateObject = helpers.albumPagePriceUpdate(
               "add",
               IUDInfo.priceTarget,
@@ -135,7 +84,7 @@ exports.handler = async (snap, context, db) => {
                   {
                     priceInfo: {
                       // note the square brackets
-                      [updateTarget]: updateObject,
+                      [`${conditionGrade}`]: updateObject,
                     },
                   },
                   {
