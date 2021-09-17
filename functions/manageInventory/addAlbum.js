@@ -14,6 +14,7 @@ exports.makeAlbumPage = async (
       .set({
         albumTitle_Search: IUDInfo.albumData.title.toLowerCase(),
         artist_Search: IUDInfo.albumData.artists_sort.toLowerCase(),
+        artistID: IUDInfo.albumData.artists[0].id,
         releaseID: IUDInfo.albumData.id,
         dispEssentials: inventoryObject.dispEssentials,
         priceInfo: {

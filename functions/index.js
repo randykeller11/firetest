@@ -4,16 +4,19 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
+const manageArtistPages = require("./manageInventory/manageArtistPages");
 
 exports.inventoryUpdate = functions.firestore
     .document("pendingInventoryUpdates/{id}")
     .onCreate((_snap, _context) => {
       inventoryUpdate.handler(_snap, _context, db);
     });
-// onUpdate function for "pendingInventoryUpdates/{id}"
-// create copy of PIU object in "crcMusicInventory"
-// add albumPage value to "musicInventories/{id}"
-// delete "PIU" document
+
+exports.manageArtistPages = functions.firestore
+    .document("albumPages/{id}")
+    .onCreate((_snap, _context) => {
+      manageArtistPages.handler(_snap, _context, db);
+    });
 
 exports.newUserSignUp = functions.auth.user().onCreate((user) => {
   console.log("user created", user.email, user.uid);
